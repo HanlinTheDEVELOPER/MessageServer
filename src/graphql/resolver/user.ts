@@ -1,9 +1,18 @@
+import { GraphQlContext } from "../../lib/types";
+
 const resolvers = {
   Query: {
     searchUsers: () => {},
   },
   Mutation: {
-    createUser: () => {},
+    createUsername: (
+      _: any,
+      args: { username: string },
+      context: GraphQlContext
+    ) => {
+      const { session } = context;
+      console.log(session, args.username);
+    },
   },
 };
 
