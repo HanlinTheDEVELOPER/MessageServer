@@ -1,15 +1,17 @@
 import { ApolloServer } from "@apollo/server";
 import { expressMiddleware } from "@apollo/server/express4";
 import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHttpServer";
+import { ApolloServerPluginLandingPageLocalDefault } from "@apollo/server/plugin/landingPage/default";
 import { makeExecutableSchema } from "@graphql-tools/schema";
 import cors from "cors";
 import express from "express";
 import http from "http";
-import { getSession } from "next-auth/react";
 
 import resolvers from "./graphql/resolver";
 import typeDefs from "./graphql/typeDefs";
-import { GraphQlContext } from "./lib/types";
+import { GraphQlContext } from "./types/types";
+import { getServerSession } from "./lib/getServerSession";
+import { PrismaClient } from "@prisma/client";
 
 const corsOption = {
   origin: "http://localhost:3000",
@@ -25,11 +27,19 @@ const main = async () => {
     resolvers,
   });
 
+  const prisma = new PrismaClient();
+
   const server = new ApolloServer({
     schema,
     csrfPrevention: true,
     cache: "bounded",
-    plugins: [ApolloServerPluginDrainHttpServer({ httpServer })],
+    plugins: [
+      ApolloServerPluginDrainHttpServer({ httpServer }),
+      ApolloServerPluginLandingPageLocalDefault({
+        embed: true,
+        includeCookies: true,
+      }),
+    ],
   });
 
   await server.start();
@@ -39,9 +49,9 @@ const main = async () => {
     express.json(),
     expressMiddleware(server, {
       context: async ({ req, res }): Promise<GraphQlContext> => {
-        const session = await getSession({ req });
-        console.log(req.headers);
-        return { session };
+        
+        const session = await getServerSession(req.headers.cookie as string);
+        return { session, prisma };
       },
     })
   );
