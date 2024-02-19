@@ -32,7 +32,7 @@ const resolvers = {
           },
         });
         return users;
-      } catch (error) {
+      } catch (error: any) {
         console.log(error);
         throw new GraphQLError(error?.message);
       }
