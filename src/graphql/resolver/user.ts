@@ -3,7 +3,9 @@ import { CreateUsernameResponse } from "../../types/types";
 
 const resolvers = {
   Query: {
-    searchUsers: () => {},
+    searchUsers: (args: { username: string }) => {
+      console.log("Inside server");
+    },
   },
   Mutation: {
     createUsername: async (
