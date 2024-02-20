@@ -1,6 +1,6 @@
 import userTypedefs from "./user";
 import conversationTypedefs from "./conversation";
-
-const typeDefs = [userTypedefs, conversationTypedefs];
+import messageTypedefs from "./message";
+const typeDefs = [userTypedefs, conversationTypedefs, messageTypedefs];
 
 export default typeDefs;
