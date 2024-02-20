@@ -1,12 +1,38 @@
 import { Prisma } from "@prisma/client";
-import { GraphQlContext } from "../../types/types";
+import { ConversationData, GraphQlContext } from "../../types/types";
 
 import { GraphQLError } from "graphql";
 
 const resolvers = {
   Query: {
-    conversations: async (_: any, __: any, context: GraphQlContext) => {
-      console.log("conversation query");
+    conversations: async (
+      _: any,
+      __: any,
+      context: GraphQlContext
+    ): Promise<Array<ConversationData>> => {
+      const { prisma, session } = context;
+      const userId = session?.user?.id;
+      try {
+        const conversations = await prisma.conversation.findMany({
+          // where: {
+          //   participants: {
+          //     some: {
+          //       userId: {
+          //         equals: userId,
+          //       },
+          //     },
+          //   },
+          // },
+          include: conversationPopulate,
+        });
+        return conversations.filter(
+          (conversation) =>
+            !!conversation.participants.find((p) => p.userId === userId)
+        );
+      } catch (error: any) {
+        console.log(error);
+        throw new GraphQLError(error?.message);
+      }
     },
   },
   Mutation: {
