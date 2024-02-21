@@ -9,9 +9,11 @@ import http from "http";
 
 import resolvers from "./graphql/resolver";
 import typeDefs from "./graphql/typeDefs";
-import { GraphQlContext } from "./types/types";
+import { GraphQlContext, SubscriptionContext } from "./types/types";
 import { getServerSession } from "./lib/getServerSession";
 import { PrismaClient } from "@prisma/client";
+import { WebSocketServer } from "ws";
+import { useServer } from "graphql-ws/lib/use/ws";
 
 const corsOption = {
   origin: "http://localhost:3000",
@@ -26,8 +28,32 @@ const main = async () => {
     typeDefs,
     resolvers,
   });
-
   const prisma = new PrismaClient();
+  // Creating the WebSocket server
+  const wsServer = new WebSocketServer({
+    // This is the `httpServer` we created in a previous step.
+    server: httpServer,
+    // Pass a different path here if app.use
+    // serves expressMiddleware at a different path
+    path: "/graphql/subscriptions",
+  });
+
+  // Hand in the schema we just created and have the
+  // WebSocketServer start listening.
+  const serverCleanup = useServer(
+    {
+      schema,
+      context: async (ctx: SubscriptionContext): Promise<GraphQlContext> => {
+        if (ctx.connectionParams && ctx.connectionParams.session) {
+          const { session } = ctx.connectionParams;
+          return { session, prisma };
+        }
+        return { session: null, prisma };
+      },
+    },
+
+    wsServer
+  );
 
   const server = new ApolloServer({
     schema,
@@ -35,10 +61,15 @@ const main = async () => {
     cache: "bounded",
     plugins: [
       ApolloServerPluginDrainHttpServer({ httpServer }),
-      ApolloServerPluginLandingPageLocalDefault({
-        embed: true,
-        includeCookies: true,
-      }),
+      {
+        async serverWillStart() {
+          return {
+            async drainServer() {
+              await serverCleanup.dispose();
+            },
+          };
+        },
+      },
     ],
   });
 
@@ -49,7 +80,6 @@ const main = async () => {
     express.json(),
     expressMiddleware(server, {
       context: async ({ req, res }): Promise<GraphQlContext> => {
-        
         const session = await getServerSession(req.headers.cookie as string);
         return { session, prisma };
       },

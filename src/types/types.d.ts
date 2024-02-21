@@ -5,12 +5,29 @@ import {
   lastMessagePopulate,
   participantsPopulate,
 } from "../graphql/resolver/conversation";
+import { Context } from "graphql-ws/lib/server";
 
+/**
+ * Server Types
+ */
 export interface GraphQlContext {
   session?: Session | null;
   prisma: PrismaClient;
 }
 
+interface Session {
+  user: User;
+  expires: ISODateString;
+}
+
+interface SubscriptionContext extends Context {
+  connectionParams: {
+    session: Session;
+  };
+}
+/**
+ * User Type
+ */
 interface CreateUsernameResponse {
   success?: boolean;
   error?: string;
@@ -23,11 +40,6 @@ interface User {
   email: string;
   emailVarifed: null;
   name: string;
-}
-
-interface Session {
-  user: User;
-  expires: ISODateString;
 }
 
 export type ConversationData = Prisma.ConversationGetPayload<{
