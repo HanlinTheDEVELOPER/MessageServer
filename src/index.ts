@@ -14,6 +14,7 @@ import { getServerSession } from "./lib/getServerSession";
 import { PrismaClient } from "@prisma/client";
 import { WebSocketServer } from "ws";
 import { useServer } from "graphql-ws/lib/use/ws";
+import { PubSub } from "graphql-subscriptions";
 
 const corsOption = {
   origin: "http://localhost:3000",
@@ -29,13 +30,14 @@ const main = async () => {
     resolvers,
   });
   const prisma = new PrismaClient();
+  const pubsub = new PubSub();
   // Creating the WebSocket server
   const wsServer = new WebSocketServer({
     // This is the `httpServer` we created in a previous step.
     server: httpServer,
     // Pass a different path here if app.use
     // serves expressMiddleware at a different path
-    path: "/graphql/subscriptions",
+    path: "/subscriptions",
   });
 
   // Hand in the schema we just created and have the
@@ -46,9 +48,9 @@ const main = async () => {
       context: async (ctx: SubscriptionContext): Promise<GraphQlContext> => {
         if (ctx.connectionParams && ctx.connectionParams.session) {
           const { session } = ctx.connectionParams;
-          return { session, prisma };
+          return { session, prisma, pubsub };
         }
-        return { session: null, prisma };
+        return { session: null, prisma, pubsub };
       },
     },
 
@@ -81,7 +83,7 @@ const main = async () => {
     expressMiddleware(server, {
       context: async ({ req, res }): Promise<GraphQlContext> => {
         const session = await getServerSession(req.headers.cookie as string);
-        return { session, prisma };
+        return { session, prisma, pubsub };
       },
     })
   );

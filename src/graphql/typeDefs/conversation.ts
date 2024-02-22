@@ -17,7 +17,7 @@ const typeDef = gql`
 
   type Participants {
     id: String
-    user: User
+    user: SearchUser
     hasSeenLastMessage: Boolean
   }
 
@@ -27,6 +27,14 @@ const typeDef = gql`
 
   type CreateConversationRes {
     conversationId: String
+  }
+
+  type Subscription {
+    conversationCreated: Test
+  }
+
+  type Test {
+    hal: String
   }
 `;
 export default typeDef;

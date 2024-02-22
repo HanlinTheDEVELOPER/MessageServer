@@ -1,5 +1,6 @@
 import { ISODateString } from "next-auth";
 import { Prisma, PrismaClient } from "@prisma/client";
+import { PubSub } from "graphql-subscriptions";
 import {
   conversationPopulate,
   lastMessagePopulate,
@@ -13,6 +14,7 @@ import { Context } from "graphql-ws/lib/server";
 export interface GraphQlContext {
   session?: Session | null;
   prisma: PrismaClient;
+  pubsub: PubSub;
 }
 
 interface Session {

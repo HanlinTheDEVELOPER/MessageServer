@@ -25,6 +25,7 @@ const resolvers = {
           // },
           include: conversationPopulate,
         });
+
         return conversations.filter(
           (conversation) =>
             !!conversation.participants.find((p) => p.userId === userId)
@@ -41,7 +42,7 @@ const resolvers = {
       args: { participantIds: string[] },
       context: GraphQlContext
     ) => {
-      const { session, prisma } = context;
+      const { session, prisma, pubsub } = context;
       const { participantIds } = args;
       const userId = session?.user.id;
 
@@ -61,10 +62,21 @@ const resolvers = {
           },
           include: conversationPopulate,
         });
+        pubsub.publish("CONVERSATION_CREATED", {
+          hal: "a",
+        });
+
         return { conversationId: conversation.id };
       } catch (error: any) {
         throw new GraphQLError(error?.message);
       }
+    },
+  },
+  Subscription: {
+    conversationCreated: {
+      subsrcibe: (_: any, __: any, { pubsub }: GraphQlContext) => {
+        return pubsub.asyncIterator(["CONVERSATION_CREATED"]);
+      },
     },
   },
 };
